@@ -19,97 +19,7 @@ ChatAI_8B_res_comb_df$logprobs_mean = ChatAI_8B_res_comb_df$logprobs/length(Chat
 ChatAI_8B_res_comb_df$maj_vote <- ifelse(ChatAI_8B_res_comb_df$maj_vote == "w", "f", ChatAI_8B_res_comb_df$maj_vote)
 # View(ChatAI_8B_res_comb_df)
 
-### read data
-loop_data = read.csv("data/loop_export_1108353_2025_04_08.csv", sep = ";")
-main_data = read.csv("data/main_data_project_1108353_2025_04_08.csv", sep = ";")
-# View(loop_data)
-# View(main_data)
-
-### process data
-## clean loop data
-
-# put list number in column "Liste"
-loop_data_processed <- tibble(loop_data) %>%
-  mutate(Liste=case_when(
-    L1_MFN!=-77 ~ 1,
-    L2_MFN!=-77 ~ 2,
-    L3_MFN!=-77 ~ 3,
-    L4_MFN!=-77 ~ 4
-  ))
-
-# put L1-4MFN into one column "MFN"
-loop_data_processed <- loop_data_processed %>%
-  mutate(MFN=case_when(
-    L1_MFN!=-77 ~ L1_MFN,
-    L2_MFN!=-77 ~ L2_MFN,
-    L3_MFN!=-77 ~ L3_MFN,
-    L4_MFN!=-77 ~ L4_MFN
-  ))
-
-# put L1-Assoziationsskala into one column "Assoziation", if MFN = neutral -> NA
-loop_data_processed <- loop_data_processed %>%
-  mutate(Assoziation=case_when(
-    L1_AssoziationSkala!=-77 ~ L1_AssoziationSkala,
-    L2_AssoziationSkala!=-77 ~ L2_AssoziationSkala,
-    L3_AssoziationSkala!=-77 ~ L3_AssoziationSkala,
-    L4_AssoziationSkala!=-77 ~ L4_AssoziationSkala
-  ))
-
-# change numerical to string category for column MFN
-loop_data_processed <- loop_data_processed %>%
-  mutate(MFN=case_when(
-    MFN==1 ~ "m",
-    MFN==2 ~ "w",
-    MFN==3 ~ "n"
-  ))
-
-## join main_data and loop_data
-# we don't need all columns, discard everything after column "ProlificID"
-data_processed <- inner_join(
-  loop_data_processed,
-  main_data[,1:which(names(main_data) == "ProlificID")],
-  by = "lfdn",
-  copy = FALSE,
-  suffix = c(".x", ".y"),
-  keep = NULL
-)
-
-# Compute the distribution of MFN for each unique le_text
-distribution <- data_processed %>%
-  group_by(le_text, MFN) %>%
-  dplyr::summarise(count = n(), .groups = "drop") %>%
-  group_by(le_text) %>%
-  mutate(percentage = count / sum(count) * 100)
-
-# View the result
-# print(distribution)
-# View(distribution)
-
-# sanity check
-sum(table(unique(data_processed$ProlificID)))
-
-prolific_distribution_wide = dcast(distribution, le_text ~ MFN, value.var="count", fill = 0)
-
-maj_vote = c()
-agr = c()
-for (i in 1:length(prolific_distribution_wide$le_text)) {
-  maj_vote_tmp = names(prolific_distribution_wide[2:4])[which(prolific_distribution_wide[i,2:4] == max(prolific_distribution_wide[i,2:4]))]
-  if (length(maj_vote_tmp)>1) {
-    print(prolific_distribution_wide[i,1])
-    maj_vote_tmp = "unklar"
-  }
-  maj_vote = append(maj_vote, maj_vote_tmp)
-  count_tmp = prolific_distribution_wide[i,2:4]
-  sum_tmp = sum(count_tmp)
-  print(sum_tmp)
-  agr_tmp = (count_tmp[1]*(count_tmp[1]-1))/(sum_tmp*(sum_tmp-1))+(count_tmp[2]*(count_tmp[2]-1))/(sum_tmp*(sum_tmp-1))+(count_tmp[3]*(count_tmp[3]-1))/(sum_tmp*(sum_tmp-1))
-  agr = append(agr, agr_tmp)
-}
-prolific_distribution_wide$maj_vote = maj_vote
-prolific_distribution_wide$maj_vote <- ifelse(prolific_distribution_wide$maj_vote=="w", "f", prolific_distribution_wide$maj_vote)
-prolific_distribution_wide$agreement = unlist(agr)
-names(prolific_distribution_wide)[1] <-  "np"
-
+prolific_distribution_wide = read.csv(file='data/aggregated_human_annotators.csv', sep = ",")
 
 comb <- left_join(prolific_distribution_wide[,1:6], gpt4o_res_comb_df[,c(1,3,5,7,8,9)], by='np', copy = FALSE, suffix = c("_prolific", "_gpt4o"), keep = NULL) %>%
   left_join(., ChatAI_70B_res_comb_df[,c(1,3,5,7,8,9)], by='np', suffix = c("","_llama_3.1_70B")) %>%
@@ -334,9 +244,6 @@ ChatAI_8B_res_comb_df$label_scatter <- ifelse(ChatAI_8B_res_comb_df$agreement < 
 ChatAI_8B_res_comb_df$maj_vote <- as.factor(ChatAI_8B_res_comb_df$maj_vote)
 ChatAI_8B_res_comb_df$maj_vote <- factor(ChatAI_8B_res_comb_df$maj_vote, levels = c("m", "n", "f"))
 
-
-### scatter (sollte hist obsolet machen)
-library(ggrepel)
 
 ChatAI_8B_agree_item = ggplot(ChatAI_8B_res_comb_df, aes(y=agreement, x=maj_vote)) + 
   geom_jitter(width = 0.1, height = 0.0) +
@@ -563,11 +470,6 @@ grid_data$end <- grid_data$end[ c( nrow(grid_data), 1:nrow(grid_data)-1)] + 1
 grid_data$start <- grid_data$start - 1
 grid_data <- grid_data[-1,]
 
-label_data$individual <-  ifelse(label_data$individual == "Leichtgewicht", "Leicht-\ngewicht", label_data$individual)
-label_data$individual <-  ifelse(label_data$individual == "Jahrhunderttalent", "Jahrhundert-\ntalent", label_data$individual)
-label_data$individual <-  ifelse(label_data$individual == "Schnapsdrossel", "Schnaps-\ndrossel", label_data$individual)
-
-
 # Make the plot
 prolific_sub1_p <- ggplot(data) +      
   
@@ -610,7 +512,7 @@ ggsave("results/fig_circular_barplot_prolificsub1.png", prolific_sub1_p, bg='tra
 ########################################################
 
 ### load data (not aggregated)
-prolific_assoc_no_agg <- loop_data_processed
+prolific_assoc_no_agg <- read.csv(file='data/human_annotators_long.csv', sep = ",")
 prolific_assoc_no_agg <-  filter(prolific_assoc_no_agg, MFN != "n")
 pos = which(names(prolific_assoc_no_agg) == "MFN")
 names(prolific_assoc_no_agg)[pos] <- "Label"
@@ -960,7 +862,7 @@ title <- expression(atop(bold("Label Agreement and Mean Surprisal"), scriptstyle
 fig_comb_agreement_surprisal = annotate_figure(fig_comb_agreement_surprisal,
                                                top=text_grob(title), left = "mean agreement per item", bottom = "mean surpirsal by item")
 fig_comb_agreement_logprobs
-ggsave("results/fig_comb_agreement_surprisal_item.png", fig_comb_agreement_surprisal, bg='transparent', width = 20, height = 15, units = "cm", dpi = 300)
+ggsave("results/fig_comb_agreement_logprobs_item.png", fig_comb_agreement_logprobs, bg='transparent', width = 20, height = 15, units = "cm", dpi = 300)
 
 
 
