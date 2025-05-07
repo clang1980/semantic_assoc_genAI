@@ -3,7 +3,6 @@ library(ggplot2)
 library(reshape2)
 
 ### read all datasets and combine human annotator data sets
-
 gpt4o_res_comb_df = read.csv(file='data/openAI_res_logprobs_variance_df.csv', sep = ",")
 gpt4o_res_comb_df$logprobs_mean = gpt4o_res_comb_df$logprobs/length(gpt4o_res_comb_df$logprobs)
 gpt4o_res_comb_df$maj_vote <- ifelse(gpt4o_res_comb_df$maj_vote == "w", "f", gpt4o_res_comb_df$maj_vote)
@@ -28,8 +27,9 @@ comb = comb[,c(1,2,4,3,6,5,9,10,11,7,8,14,15,16,12,13,19,20,21,17,18)]
 names(comb)[12:16] = c("m_llama_3.1_70B", "w_llama_3.1_70B", "n_llama_3.1_70B", "maj_vote_llama_3.1_70B", "agreement_llama_3.1_70B")
 #View(comb)
 
-
 write.csv(comb, "results/aggregated_combination_llm_human_annotators.csv")
+
+
 
 ########################################################
 ################## Confusion Matrices ##################
@@ -42,7 +42,6 @@ rem_target = comb[which(comb$maj_vote_prolific=="unklar"),]$np
 comb_tmp = comb[-which(comb$np == rem_target),]
 
 ## Prolific v GPT-4o
-
 maj_vote_gpt4o <- as.factor(comb_tmp$maj_vote_gpt4o)
 maj_vote_gpt4o <- factor(maj_vote_gpt4o, levels = c("m", "n", "f"))
 
@@ -69,7 +68,6 @@ prolific_gpt4o_cm_vis = ggplot(prolific_gpt4o_plt_comb, aes(Human_Annotators,GPT
 prolific_gpt4o_cm_vis
 
 ## Prolific v Llama 3.1 70B
-
 maj_vote_llama_3.1_70B <- as.factor(comb_tmp$maj_vote_llama_3.1_70B)
 maj_vote_llama_3.1_70B <- factor(maj_vote_llama_3.1_70B, levels = c("m", "n", "f"))
 
@@ -125,10 +123,7 @@ prolific_llama_3.1_8B_cm_vis
 
 #### Combine single plots into one object
 library(ggpubr)
-
-### combine all confusion matrizes into one
 fig_comb_confusion = ggarrange(prolific_gpt4o_cm_vis, prolific_llama_3.1_70B_cm_vis, prolific_llama_3.1_8B_cm_vis, 
-          #labels = c("A", "B", "C"),
           ncol = 1, nrow = 3)
 fig_comb_confusion
 ggsave("results/fig_comb_confusion.png", fig_comb_confusion, bg='transparent', width = 15, height = 10, units = "cm", dpi = 300)
@@ -140,7 +135,6 @@ library(caret)
 library(Metrics)
 
 # Create predicted and actual class labels
-
 gpt4o_prec = prolific_gpt4o_cm$byClass[,"Precision"]
 gpt4o_recall = prolific_gpt4o_cm$byClass[,"Recall"]
 gpt4o_f1 = prolific_gpt4o_cm$byClass[,"F1"]
@@ -214,7 +208,6 @@ fig_comb_confusion_prf1
 ggsave("results/fig_comb_confusion_prf1.png", fig_comb_confusion_prf1, bg='transparent', width = 15, height = 10, units = "cm", dpi = 300)
 
 ### Calculate Random Baseline
-
 set.seed(42)
 probs_m_n_f = as.vector(table(maj_vote_prolific))
 probs_m_n_f = probs_m_n_f/115
@@ -250,18 +243,19 @@ prolific_agree_item = ggplot(prolific_distribution_wide, aes(y=agreement, x=maj_
   geom_jitter(width = 0.1, height = 0.0) +
   geom_text_repel(aes(label=label_scatter), max.overlaps = 20) +
   labs(
-       subtitle = "Human Annotators; labels for agreement = 1",
+       # subtitle = "Human Annotators; labels for agreement = 1",
        x = "Majority Vote",
        y = "Agreement per Item") +
   theme(
-    axis.title.y = element_text(color = "black", size = 12),
-    axis.text.y = element_text(angle = 0, size = 12),
+    axis.title.y = element_text(color = "black", size = 14),
+    axis.text.y = element_text(angle = 0, size = 14),
     axis.title.y.right = element_text(color = "black", size = 12),
-    axis.text.x = element_text(angle = 0, size = 12),
+    axis.text.x = element_text(angle = 0, size = 14),
     axis.title.x = element_text(size = 12),
     plot.title = element_text(size=14),
     legend.position="none"
-  )
+  ) +
+  theme_light()
 prolific_agree_item
 
 
@@ -273,18 +267,20 @@ gpt4o_res_comb_df$maj_vote <- factor(gpt4o_res_comb_df$maj_vote, levels = c("m",
 openAI_agree_item = ggplot(gpt4o_res_comb_df, aes(y=agreement, x=maj_vote)) + 
   geom_jitter(width = 0.1, height = 0.0) +
   geom_text_repel(aes(label=label_scatter), max.overlaps = 20) +
-  labs(subtitle = paste0("GPT-4o; labels for agreement < ", openAI_cutoff),
+  labs(
+    # subtitle = paste0("GPT-4o; labels for agreement < ", openAI_cutoff),
        x = "Majority Vote",
        y = "Agreement per Item") +
   theme(
     axis.title.y = element_text(color = "black", size = 12),
     axis.text.y = element_text(angle = 0, size = 12),
     axis.title.y.right = element_text(color = "black", size = 12),
-    axis.text.x = element_text(angle = 0, size = 12),
+    axis.text.x = element_text(angle = 0, size = 14),
     axis.title.x = element_text(size = 12),
     plot.title = element_text(size=14),
     legend.position="none"
-  ) 
+  ) +
+  theme_light()
 openAI_agree_item
 
 
@@ -297,18 +293,19 @@ ChatAI_70B_agree_item = ggplot(ChatAI_70B_res_comb_df, aes(y=agreement, x=maj_vo
   geom_jitter(width = 0.1, height = 0.0) +
   geom_text_repel(aes(label=label_scatter), max.overlaps = 20) +
   labs(#title = "LLaMA 3.1 70B - Agreement per Item",
-       subtitle = paste0("LLaMA 3.1 70B; labels for agreement < ", ChatAI_70B_cutoff),
+       # subtitle = paste0("LLaMA 3.1 70B; labels for agreement < ", ChatAI_70B_cutoff),
        x = "Majority Vote",
        y = "Agreement per Item") +
   theme(
-    axis.title.y = element_text(color = "black", size = 12),
-    axis.text.y = element_text(angle = 0, size = 12),
+    axis.title.y = element_text(color = "black", size = 14),
+    axis.text.y = element_text(angle = 0, size = 14),
     axis.title.y.right = element_text(color = "black", size = 12),
-    axis.text.x = element_text(angle = 0, size = 12),
+    axis.text.x = element_text(angle = 0, size = 14),
     axis.title.x = element_text(size = 12),
     plot.title = element_text(size=14),
     legend.position="none"
-  ) 
+  ) +
+  theme_light()
 ChatAI_70B_agree_item
 
 ChatAI_8B_cutoff = 1
@@ -322,18 +319,19 @@ ChatAI_8B_agree_item = ggplot(ChatAI_8B_res_comb_df, aes(y=agreement, x=maj_vote
   geom_jitter(width = 0.1, height = 0.0) +
   geom_text_repel(aes(label=label_scatter), max.overlaps = 20) +
   labs(#title = "LLaMA 3.1 8B - Agreement per Item",
-       subtitle = paste0("LLaMA 3.1 8B; labels for agreement < ", ChatAI_8B_cutoff),
+       # subtitle = paste0("LLaMA 3.1 8B; labels for agreement < ", ChatAI_8B_cutoff),
        x = "Majority Vote",
        y = "Agreement per Item") +
   theme(
     axis.title.y = element_text(color = "black", size = 12),
     axis.text.y = element_text(angle = 0, size = 12),
     axis.title.y.right = element_text(color = "black", size = 12),
-    axis.text.x = element_text(angle = 0, size = 12),
+    axis.text.x = element_text(angle = 0, size = 14),
     axis.title.x = element_text(size = 12),
     plot.title = element_text(size=14),
     legend.position="none"
-  ) 
+  ) +
+  theme_light()
 ChatAI_8B_agree_item
 
 library(ggpubr)
@@ -356,11 +354,11 @@ fig_comb_agreement_item = ggarrange(prolific_agree_item +
           nrow = 2,
           ncol = 2)
 
-title <- expression(atop(bold("Agreement per Item"), scriptstyle("116 items, 33 participants/generated labels per item")))
+title <- expression(atop(bold("Agreement per Item")))
 fig_comb_agreement_item = annotate_figure(fig_comb_agreement_item,
-                top=text_grob(title), bottom = textGrob("Majority Vote", gp = gpar(cex = 0.9)))
+                top = textGrob(title, gp = gpar(fontsize = 14)), bottom = textGrob("Majority Vote", gp = gpar(fontsize = 14)))
 fig_comb_agreement_item
-ggsave("results/fig_comb_agreement_item2.png", fig_comb_agreement_item, bg='transparent', width = 20, height = 15, units = "cm", dpi = 300)
+ggsave("results/fig_comb_agreement_item.png", fig_comb_agreement_item, bg='transparent', width = 20, height = 15, units = "cm", dpi = 300)
 
 
 
@@ -645,12 +643,21 @@ hist_Human_Annotators <- ggplot(prolific_assoc_no_agg, aes(x=Association, fill =
   scale_color_manual(values = colors_hist) +
   geom_vline(data=mu, aes(xintercept=grp.mean, color=Label),
              linetype="dashed") +
-  theme(legend.position="top") +
+  theme(
+    axis.title.y = element_text(color = "black", size = 12),
+    axis.text.y = element_text(angle = 0, size = 12),
+    axis.title.y.right = element_text(color = "black", size = 12),
+    axis.text.x = element_text(angle = 0, size = 14),
+    axis.title.x = element_text(size = 12),
+    plot.title = element_text(size=14),
+    legend.position="none"
+  )  +
   labs(
     #subtitle = paste0("Human Annotators; N (total):", length(prolific_assoc_no_agg$Association), "; N (Label m): ", length(prolific_assoc_no_agg[which(prolific_assoc_no_agg$Label=="m"),]$Association), "; N (Label w): ",  length(prolific_assoc_no_agg[which(prolific_assoc_no_agg$Label=="w"),]$Association)),
-    subtitle = paste0("Human Annotators; N (total): ", length(prolific_assoc_no_agg$Association)),
+    subtitle = paste0("Human Annotators; N: ", length(prolific_assoc_no_agg$Association)),
     x = "Association strength",
-    y = "Count")
+    y = "Count") +
+  theme_light()
 hist_Human_Annotators
 
 ### GPT4o
@@ -661,13 +668,22 @@ hist_openAI <- ggplot(openAI_assoc_no_agg, aes(x=Association, fill=Label)) +
   scale_color_manual(values = colors_hist) +
   geom_vline(data=mu, aes(xintercept=grp.mean, color=Label),
              linetype="dashed") +
-  theme(legend.position="top") +
+  theme(
+    axis.title.y = element_text(color = "black", size = 12),
+    axis.text.y = element_text(angle = 0, size = 12),
+    axis.title.y.right = element_text(color = "black", size = 12),
+    axis.text.x = element_text(angle = 0, size = 14),
+    axis.title.x = element_text(size = 12),
+    plot.title = element_text(size=14),
+    legend.position="none"
+  )  +
   labs(
     # subtitle = paste0("GPT-4o; N (total):", length(openAI_assoc_no_agg$Association), "; N (Label m): ", length(openAI_assoc_no_agg[which(openAI_assoc_no_agg$Label=="m"),]$Association), "; N (Label w): ",  length(openAI_assoc_no_agg[which(openAI_assoc_no_agg$Label=="w"),]$Association)),
-    subtitle = paste0("GPT-4o; N (total): ", length(openAI_assoc_no_agg$Association)),
+    subtitle = paste0("GPT-4o; N: ", length(openAI_assoc_no_agg$Association)),
     
     x = "Association strength",
-    y = "Count")
+    y = "Count") +
+  theme_light()
 hist_openAI
 
 ### Llama 70B
@@ -678,12 +694,21 @@ hist_llama70B <- ggplot(Llama_3.1_70B_assoc_no_agg, aes(x=Association, fill=Labe
   scale_color_manual(values = colors_hist) +
   geom_vline(data=mu, aes(xintercept=grp.mean, color=Label),
              linetype="dashed") +
-  theme(legend.position="top") +
+  theme(
+    axis.title.y = element_text(color = "black", size = 12),
+    axis.text.y = element_text(angle = 0, size = 12),
+    axis.title.y.right = element_text(color = "black", size = 12),
+    axis.text.x = element_text(angle = 0, size = 14),
+    axis.title.x = element_text(size = 12),
+    plot.title = element_text(size=14),
+    legend.position="none"
+  )  +
   labs(
     # subtitle = paste0("Llama 3.1 70B; N (total):", length(Llama_3.1_70B_assoc_no_agg$Association), "; N (Label m): ", length(Llama_3.1_70B_assoc_no_agg[which(Llama_3.1_70B_assoc_no_agg$Label=="m"),]$Association), "; N (Label w): ",  length(Llama_3.1_70B_assoc_no_agg[which(Llama_3.1_70B_assoc_no_agg$Label=="w"),]$Association)),
-    subtitle = paste0("LLaMA 3.1 70B; N (total): ", length(Llama_3.1_70B_assoc_no_agg$Association)),
+    subtitle = paste0("LLaMA 3.1 70B; N: ", length(Llama_3.1_70B_assoc_no_agg$Association)),
     x = "Association strength",
-    y = "Count")
+    y = "Count") +
+  theme_light()
 hist_llama70B
 
 
@@ -695,11 +720,20 @@ hist_llama8B <- ggplot(Llama_3.1_8B_assoc_no_agg, aes(x=Association, fill=Label)
   scale_color_manual(values = colors_hist) +
   geom_vline(data=mu, aes(xintercept=grp.mean, color=Label),
              linetype="dashed") +
-  theme(legend.position="top") +
+  theme(
+    axis.title.y = element_text(color = "black", size = 12),
+    axis.text.y = element_text(angle = 0, size = 12),
+    axis.title.y.right = element_text(color = "black", size = 12),
+    axis.text.x = element_text(angle = 0, size = 14),
+    axis.title.x = element_text(size = 12),
+    plot.title = element_text(size=14),
+    legend.position="none"
+  )  +
   labs(
-    subtitle = paste0("LLaMA 3.1 8B; N (total): ", length(Llama_3.1_8B_assoc_no_agg$Association)),
+    subtitle = paste0("LLaMA 3.1 8B; N: ", length(Llama_3.1_8B_assoc_no_agg$Association)),
     x = "Association strength",
-    y = "Count")
+    y = "Count") +
+  theme_light()
 hist_llama8B
 
 
@@ -724,7 +758,7 @@ hist_comb = ggarrange(hist_Human_Annotators +
                          common.legend = TRUE, legend="right")
 
 title <- expression(atop(bold("Distribution of Association Strength")))
-hist_comb = annotate_figure(hist_comb, top=text_grob(title), left = "count", bottom = "Association Strength")
+hist_comb = annotate_figure(hist_comb, top=textGrob(title, gp = gpar(fontsize = 14)), left = textGrob("Count", rot = 90, gp = gpar(fontsize = 14)), bottom = textGrob("Association Strength", gp = gpar(fontsize = 14)))
 hist_comb
 
 ggsave("results/fig_comb_histogram_assoc.png", hist_comb, bg='transparent', width = 20, height = 15, units = "cm", dpi = 300)
@@ -758,7 +792,8 @@ openAI_assoc_logprob_fig <- ggplot(openAI_assoc_no_agg, aes(x = Logprobs_Sum, y 
     plot.title = element_text(size=14),
     legend.position="bottom"
   ) +
-  geom_rug() 
+  geom_rug() +
+  theme_light()
 openAI_assoc_logprob_fig
 
 
@@ -782,7 +817,8 @@ llama70B_assoc_logprob_fig <- ggplot(Llama_3.1_70B_assoc_no_agg, aes(x = Logprob
     plot.title = element_text(size=14),
     legend.position="bottom"
   ) +
-  geom_rug() 
+  geom_rug() +
+  theme_light()
 llama70B_assoc_logprob_fig
 
 
@@ -806,7 +842,8 @@ llama8B_assoc_logprob_fig <- ggplot(Llama_3.1_8B_assoc_no_agg, aes(x = Logprobs_
     plot.title = element_text(size=14),
     legend.position="bottom"
   ) +
-  geom_rug() 
+  geom_rug() +
+  theme_light()
 llama8B_assoc_logprob_fig
 
 
@@ -829,7 +866,7 @@ comb_assoc_logprob_fig = ggarrange(
                       common.legend = TRUE, legend="right")
 
 title <- expression(atop(bold("Association Strength and Logprobs")))
-comb_assoc_logprob_fig = annotate_figure(comb_assoc_logprob_fig, top=text_grob(title), left = "Association Strength", bottom = "Sum of Subtoken Logprobs per Generated Label")
+comb_assoc_logprob_fig = annotate_figure(comb_assoc_logprob_fig, top=textGrob(title), left = "Association Strength", bottom = "Sum of Subtoken Logprobs per Generated Label")
 comb_assoc_logprob_fig
 
 ggsave("results/fig_comb_assoc_logprob.png", comb_assoc_logprob_fig, bg='transparent', width = 20, height = 15, units = "cm", dpi = 300)
@@ -934,7 +971,7 @@ fig_comb_agreement_logprobs = ggarrange(OpenAI_agreement_logprobs_fig +
 
 title <- expression(atop(bold("Label Agreement and Mean Surprisal"), scriptstyle("N = 116 items")))
 fig_comb_agreement_logprobs = annotate_figure(fig_comb_agreement_logprobs,
-                                               top=text_grob(title), left = "mean agreement per item", bottom = "mean surpirsal by item")
+                                               top=textGrob(title), left = "mean agreement per item", bottom = "mean surpirsal by item")
 fig_comb_agreement_logprobs
 ggsave("results/fig_comb_agreement_logprobs_item.png", fig_comb_agreement_logprobs, bg='transparent', width = 20, height = 15, units = "cm", dpi = 300)
 
