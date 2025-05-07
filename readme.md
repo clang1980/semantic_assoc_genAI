@@ -1,4 +1,4 @@
-This repo contains the data the paper "Semantic Associations and Generative AI –  Using LLMs for experimental stimulus pretests in linguistics" for Konvens 2025 is based on.
+This repo contains the data the paper "Using LLMs for experimental stimulus pretests in linguistics. Evidence from semantic associations between words and social gender" for Konvens 2025 is based on.
 
 - "noun_list_uni.csv" contains our dataset, the list of German NPs 
 - the directory "data" contains the aggregated LLM and human annotator data needed for further analysis
